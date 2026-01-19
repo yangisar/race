@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DAYINBALL RACE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #202020;
+            font-family: 'Permanent Marker', cursive, sans-serif;
+            touch-action: none; /* Prevent scrolling on mobile */
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 40%, #505050 40%, #202020 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85);
+            color: #FFD700; /* Gold */
+            z-index: 10;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin: 0;
+            text-shadow: 4px 4px #FF00FF; /* Hot Pink shadow */
+            transform: rotate(-3deg);
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 2rem;
+            font-family: 'Permanent Marker', cursive;
+            background-color: #FF00FF;
+            color: white;
+            border: 4px solid #FFD700;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px #000;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 5;
+            font-size: 1.5rem;
+            color: #FFF;
+            text-shadow: 2px 2px #000;
+        }
+
+        .hud-left { color: #00FF00; } /* Green for Health */
+        .hud-right { text-align: right; }
+
+        /* Mobile Controls */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 8;
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px;
+            gap: 10px;
+            opacity: 0.6;
+        }
+
+        .d-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            user-select: none;
+        }
+        
+        .d-btn:active { background: rgba(255, 255, 255, 0.6); }
+        
+        /* Grid placement for D-pad */
+        #btn-up { grid-column: 2; grid-row: 1; }
+        #btn-left { grid-column: 1; grid-row: 2; }
+        #btn-down { grid-column: 2; grid-row: 2; }
+        #btn-right { grid-column: 3; grid-row: 2; }
+
+        #screen-start { display: flex; }
+        #screen-gameover { display: none; }
+
+        /* Landscape warning for mobile */
+        @media screen and (orientation: portrait) {
+            #portrait-warning { display: flex !important; }
+        }
+        #portrait-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            color: white;
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="portrait-warning">
+        Please rotate your device to Landscape mode to play!
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-left">HEALTH: <span id="healthVal">100</span>%</div>
+            <div class="hud-right">
+                LETTERS: <span id="scoreVal">0</span><br>
+                TIME: <span id="timeVal">0</span>s
+            </div>
+        </div>
+
+        <div id="screen-start" class="overlay">
+            <h1>DAYINBALL RACE</h1>
+            <p style="color: #FF00FF; margin-bottom: 5px;">ALMATY STREETS</p>
+            <p>Gather Kazakh Letters. Avoid Obstacles.</p>
+            <button onclick="startGame()">START ENGINE</button>
+        </div>
+
+        <div id="screen-gameover" class="overlay">
+            <h1>GAME OVER</h1>
+            <p>Time Survived: <span id="end-time">0</span>s</p>
+            <p>Letters Gathered: <span id="end-score">0</span></p>
+            <p style="font-size: 1rem; color: #aaa;">Collected: <span id="end-collection"></span></p>
+            <button onclick="resetGame()">RIDE AGAIN</button>
+        </div>
+
+        <div id="controls">
+            <div class="d-btn" id="btn-up">▲</div>
+            <div class="d-btn" id="btn-left">◀</div>
+            <div class="d-btn" id="btn-down">▼</div>
+            <div class="d-btn" id="btn-right">▶</div>
+        </div>
+    </div>
+
+    <script>
+        // --- Setup ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        let lastTime = 0;
+
+        // Game State
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let frames = 0;
+        let gameSpeed = 5;
+        let score = 0;
+        let startTime = 0;
+        let timeSurvived = 0;
+        let collectedLettersString = "";
+        
+        // Kaz Alphabet
+        const kazakhChars = ['А', 'Ә', 'Б', 'В', 'Г', 'Ғ', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Қ', 'Л', 'М', 'Н', 'Ң', 'О', 'Ө', 'П', 'Р', 'С', 'Т', 'У', 'Ұ', 'Ү', 'Ф', 'Х', 'Һ', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'І', 'Ь', 'Э', 'Ю', 'Я'];
+
+        // Entities
+        const car = {
+            x: 50,
+            y: 0,
+            w: 80,
+            h: 40,
+            speed: 5,
+            color: '#FF00FF', // Hot Pink
+            health: 100,
+            dy: 0,
+            dx: 0
+        };
+
+        let obstacles = [];
+        let letters = [];
+        let roadOffset = 0;
+        let mountainOffset = 0;
+
+        // Resize Logic
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Set road Y based on height (bottom 60% is road)
+            roadY = canvas.height * 0.4;
+            car.y = roadY + (canvas.height - roadY)/2 - car.h/2;
+        }
+        let roadY;
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Input Handling ---
+        const keys = { w: false, a: false, s: false, d: false };
+
+        window.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowUp' || e.key === 'w') keys.w = true;
+            if(e.key === 'ArrowDown' || e.key === 's') keys.s = true;
+            if(e.key === 'ArrowLeft' || e.key === 'a') keys.a = true;
+            if(e.key === 'ArrowRight' || e.key === 'd') keys.d = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if(e.key === 'ArrowUp' || e.key === 'w') keys.w = false;
+            if(e.key === 'ArrowDown' || e.key === 's') keys.s = false;
+            if(e.key === 'ArrowLeft' || e.key === 'a') keys.a = false;
+            if(e.key === 'ArrowRight' || e.key === 'd') keys.d = false;
+        });
+
+        // Touch Controls
+        const btns = ['btn-up', 'btn-down', 'btn-left', 'btn-right'];
+        const map = {'btn-up': 'w', 'btn-down': 's', 'btn-left': 'a', 'btn-right': 'd'};
+
+        btns.forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[map[id]] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); keys[map[id]] = false; });
+            // Mouse support for testing on desktop with buttons
+            el.addEventListener('mousedown', (e) => { keys[map[id]] = true; });
+            el.addEventListener('mouseup', (e) => { keys[map[id]] = false; });
+        });
+
+
+        // --- Drawing Functions ---
+
+        function drawSkyline() {
+            // Sky
+            // Mountains (Trans-Ili Alatau) - Parallax slow move
+            ctx.fillStyle = '#C0C0C0'; // Grey mountains
+            ctx.beginPath();
+            ctx.moveTo(0, roadY);
+            
+            // Procedural jagged peaks
+            for(let i = 0; i <= canvas.width + 200; i+= 50) {
+                let x = (i - mountainOffset) % (canvas.width + 200);
+                // Handle wrapping visually seamless needs more complex logic, simplified here:
+                if (x < 0) x += (canvas.width + 200);
+                
+                let peakH = (i % 100 === 0) ? 150 : 50; 
+                ctx.lineTo(x, roadY - peakH);
+            }
+            ctx.lineTo(canvas.width, roadY);
+            ctx.fill();
+
+            // Kok Tobe Tower (Simplistic)
+            let towerX = (canvas.width * 0.8 - mountainOffset * 0.5) % (canvas.width + 500);
+            if(towerX < 0) towerX += (canvas.width + 500);
+            
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(towerX, roadY);
+            ctx.lineTo(towerX, roadY - 180);
+            ctx.stroke();
+            // The apple/top
+            ctx.fillStyle = '#AA0000';
+            ctx.beginPath();
+            ctx.arc(towerX, roadY - 180, 10, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function drawRoad() {
+            // Road Surface
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, roadY, canvas.width, canvas.height - roadY);
+
+            // Moving Lines
+            ctx.fillStyle = '#FFF';
+            let laneHeight = (canvas.height - roadY) / 4;
+            
+            for(let i=1; i<4; i++) {
+                let y = roadY + (laneHeight * i);
+                for(let j=0; j<canvas.width; j+=80) {
+                    let x = (j - roadOffset) % canvas.width;
+                    if(x < 0) x += canvas.width;
+                    ctx.fillRect(x, y, 40, 5);
+                }
+            }
+        }
+
+        function drawCar() {
+            // Body
+            ctx.fillStyle = car.color;
+            // A simple sedan shape
+            ctx.beginPath();
+            ctx.moveTo(car.x, car.y + car.h);
+            ctx.lineTo(car.x + car.w, car.y + car.h); // Bottom
+            ctx.lineTo(car.x + car.w, car.y + car.h*0.4); // Front nose
+            ctx.lineTo(car.x + car.w*0.7, car.y); // Windshield
+            ctx.lineTo(car.x + car.w*0.2, car.y); // Roof
+            ctx.lineTo(car.x, car.y + car.h*0.4); // Rear
+            ctx.closePath();
+            ctx.fill();
+            
+            // Wheels
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(car.x + 15, car.y + car.h, 10, 0, Math.PI*2);
+            ctx.arc(car.x + car.w - 15, car.y + car.h, 10, 0, Math.PI*2);
+            ctx.fill();
+
+            // Headlight
+            ctx.fillStyle = '#FFFF00';
+            ctx.fillRect(car.x + car.w - 5, car.y + car.h*0.5, 5, 10);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = '#FF4500'; // Orange Red
+            obstacles.forEach(obs => {
+                // Draw a "Rock" or Barrier
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                // Detail
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+            });
+        }
+
+        function drawLetters() {
+            ctx.font = 'bold 30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            letters.forEach(l => {
+                // Bubble
+                ctx.fillStyle = '#FFD700'; // Gold
+                ctx.beginPath();
+                ctx.arc(l.x + l.w/2, l.y + l.h/2, l.w/2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+
+                // Text
+                ctx.fillStyle = '#000';
+                ctx.fillText(l.char, l.x + l.w/2, l.y + l.h/2);
+            });
+        }
+
+        // --- Logic ---
+
+        function update() {
+            // Car Movement
+            if (keys.w && car.y > roadY) car.y -= car.speed;
+            if (keys.s && car.y < canvas.height - car.h) car.y += car.speed;
+            if (keys.a && car.x > 0) car.x -= car.speed;
+            if (keys.d && car.x < canvas.width - car.w) car.x += car.speed;
+
+            // Environment Movement
+            roadOffset += gameSpeed;
+            mountainOffset += gameSpeed * 0.1; // Parallax
+            gameSpeed += 0.001; // Slowly speed up
+
+            // Spawning
+            if (frames % 100 === 0) {
+                // Spawn Obstacle
+                let h = 40;
+                let y = Math.random() * (canvas.height - roadY - h) + roadY;
+                obstacles.push({ x: canvas.width, y: y, w: 40, h: 40, active: true });
+            }
+
+            if (frames % 150 === 0) {
+                // Spawn Letter
+                let h = 40;
+                let y = Math.random() * (canvas.height - roadY - h) + roadY;
+                let char = kazakhChars[Math.floor(Math.random() * kazakhChars.length)];
+                letters.push({ x: canvas.width, y: y, w: 40, h: 40, char: char, active: true });
+            }
+
+            // Update Obstacles
+            obstacles.forEach(obs => obs.x -= gameSpeed);
+            obstacles = obstacles.filter(obs => obs.x + obs.w > 0 && obs.active);
+
+            // Update Letters
+            letters.forEach(l => l.x -= gameSpeed);
+            letters = letters.filter(l => l.x + l.w > 0 && l.active);
+
+            // Collisions
+            checkCollisions();
+
+            // Stats
+            let now = Date.now();
+            timeSurvived = ((now - startTime) / 1000).toFixed(1);
+            
+            // HUD Update
+            document.getElementById('healthVal').innerText = Math.floor(car.health);
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('timeVal').innerText = timeSurvived;
+
+            frames++;
+            
+            if (car.health <= 0) gameOver();
+        }
+
+        function checkCollisions() {
+            // AABB Collision
+            obstacles.forEach(obs => {
+                if (car.x < obs.x + obs.w &&
+                    car.x + car.w > obs.x &&
+                    car.y < obs.y + obs.h &&
+                    car.y + car.h > obs.y) {
+                    
+                    if(obs.active) {
+                        car.health -= 20;
+                        obs.active = false; // Remove after hit so it doesn't drain instant
+                        // Flash effect could go here
+                    }
+                }
+            });
+
+            letters.forEach(l => {
+                if (car.x < l.x + l.w &&
+                    car.x + car.w > l.x &&
+                    car.y < l.y + l.h &&
+                    car.y + car.h > l.y) {
+                    
+                    if(l.active) {
+                        score++;
+                        collectedLettersString += l.char + " ";
+                        l.active = false;
+                    }
+                }
+            });
+        }
+
+        function loop() {
+            if (gameState !== 'PLAYING') return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawSkyline();
+            drawRoad();
+            drawObstacles();
+            drawLetters();
+            drawCar();
+
+            update();
+            animationId = requestAnimationFrame(loop);
+        }
+
+        // --- Game Flow Control ---
+
+        function startGame() {
+            document.getElementById('screen-start').style.display = 'none';
+            document.getElementById('screen-gameover').style.display = 'none';
+            document.getElementById('controls').style.display = 'grid';
+            
+            gameState = 'PLAYING';
+            score = 0;
+            car.health = 100;
+            car.x = 50;
+            gameSpeed = 5;
+            obstacles = [];
+            letters = [];
+            collectedLettersString = "";
+            startTime = Date.now();
+            frames = 0;
+            
+            loop();
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            cancelAnimationFrame(animationId);
+            
+            document.getElementById('screen-gameover').style.display = 'flex';
+            document.getElementById('controls').style.display = 'none';
+            
+            document.getElementById('end-time').innerText = timeSurvived;
+            document.getElementById('end-score').innerText = score;
+            document.getElementById('end-collection').innerText = collectedLettersString;
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+    </script>
+</body>
+</html>
