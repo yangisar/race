@@ -1,24 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DAIYNBALL – DOT DISPLAY</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DAIYNBALL — WIP</title>
 
 <style>
 html, body {
     margin: 0;
-    width: 100%;
     height: 100%;
     background: #050505;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: monospace;
-    overflow: hidden;
 }
 
-/* Station frame */
 .station {
     background: #0b0b0b;
     border: 8px solid #222;
@@ -26,58 +23,39 @@ html, body {
     box-shadow: inset 0 0 40px #000;
 }
 
-/* Dot screen */
 .screen {
     background: #020202;
-    padding: 24px 30px;
+    padding: 30px 40px;
     box-shadow: inset 0 0 20px #000, 0 0 40px rgba(0,255,120,0.2);
+    text-align: center;
 }
 
-/* Dot grid text */
-.dot-text {
-    font-size: 0;
-    display: inline-block;
-    filter: drop-shadow(0 0 6px rgba(0,255,120,0.6));
-}
-
-/* One row of dots */
-.row {
-    white-space: nowrap;
-}
-
-/* Single dot */
 .dot {
-    display: inline-block;
     width: 6px;
     height: 6px;
     margin: 2px;
     border-radius: 50%;
     background: #003319;
-    box-shadow: inset 0 0 2px #000;
+    display: inline-block;
 }
 
-/* Lit dot */
 .on {
     background: #00ff88;
-    box-shadow:
-        0 0 6px rgba(0,255,120,0.8),
-        inset 0 0 2px #baffd9;
+    box-shadow: 0 0 6px rgba(0,255,120,0.8);
 }
 
-/* Subtle flicker */
-.on {
-    animation: flicker 4s infinite;
-}
-
-@keyframes flicker {
-    0%, 97%, 100% { opacity: 1; }
-    98% { opacity: 0.7; }
-    99% { opacity: 0.9; }
-}
-
-/* Spacing */
-.block {
+.line {
     margin-bottom: 14px;
+}
+
+button {
+    margin-top: 16px;
+    background: #00ff88;
+    border: none;
+    padding: 8px 16px;
+    font-family: monospace;
+    font-weight: bold;
+    cursor: pointer;
 }
 </style>
 </head>
@@ -86,51 +64,88 @@ html, body {
 
 <div class="station">
   <div class="screen">
-
-    <!-- DAIYNBALL -->
-    <div class="dot-text block">
-      <!-- 7x5 dot font per letter -->
-      <!-- D -->
-      <div class="row">
-        <span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot on"></span><span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot on"></span>
-      </div>
-      <div class="row">
-        <span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot on"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot on"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span>
-      </div>
-    </div>
-
-    <!-- JBRLA -->
-    <div class="dot-text block">
-      <div class="row">
-        <span class="dot"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot on"></span><span class="dot on"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot"></span><span class="dot on"></span><span class="dot"></span><span class="dot on"></span>
-      </div>
-    </div>
-
-    <!-- STATUS -->
-    <div class="dot-text">
-      <div class="row">
-        <span class="dot on"></span><span class="dot on"></span><span class="dot on"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot on"></span><span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot on"></span><span class="dot"></span><span class="dot on"></span>
-      </div>
-    </div>
-
+    <div class="line" id="title"></div>
+    <div class="line" id="subtitle"></div>
+    <div class="line" id="status"></div>
+    <button onclick="startMusic()">▶ START</button>
   </div>
 </div>
+
+<script>
+// ---------- DOT TEXT ----------
+function dotText(el, text) {
+  el.innerHTML = "";
+  [...text].forEach(char => {
+    if (char === " ") {
+      el.innerHTML += "&nbsp;&nbsp;";
+      return;
+    }
+    for (let i = 0; i < 5; i++) {
+      let d = document.createElement("span");
+      d.className = "dot on";
+      el.appendChild(d);
+    }
+    el.innerHTML += "&nbsp;";
+  });
+}
+
+dotText(title, "DAIYNBALL");
+dotText(subtitle, "JBRLA");
+dotText(status, "RACE GAME — WORK IN PROGRESS");
+
+// ---------- CHOPIN-INSPIRED SOUNDTRACK ----------
+let ctx, master;
+
+function startMusic() {
+  if (ctx) return;
+
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain();
+  master.gain.value = 0.15;
+  master.connect(ctx.destination);
+
+  // Minute Waltz–inspired motif (NOT a transcription)
+  // Fast 3/4, chromatic bounce, playful
+  const melody = [
+    76, 79, 81, 79, 76, 74,
+    76, 79, 83, 81, 79, 76,
+    74, 76, 79, 76, 74, 72
+  ];
+
+  let t = ctx.currentTime + 0.1;
+  const beat = 0.12; // very fast waltz feel
+
+  melody.forEach((note, i) => {
+    playNote(note, t + i * beat);
+  });
+
+  // Loop
+  setInterval(() => {
+    let start = ctx.currentTime + 0.05;
+    melody.forEach((note, i) => {
+      playNote(note, start + i * beat);
+    });
+  }, melody.length * beat * 1000);
+}
+
+function playNote(midi, time) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "triangle"; // chiptune-like
+  osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(0.4, time + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.11);
+
+  osc.connect(gain);
+  gain.connect(master);
+
+  osc.start(time);
+  osc.stop(time + 0.12);
+}
+</script>
 
 </body>
 </html>
