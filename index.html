@@ -1,222 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DAIYNBALL — WIP</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DAIYNBALL — JBRLA</title>
 
 <style>
-html, body {
-    margin: 0;
-    height: 100%;
-    background: #050505;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: monospace;
+body {
+  margin: 0;
+  background: #050505;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: "Arial Narrow", Arial, sans-serif;
 }
 
-.station {
-    background: #0b0b0b;
-    border: 8px solid #222;
-    padding: 30px;
-    box-shadow: inset 0 0 40px #000;
+.screen {
+  background: #0e0e0e;
+  border: 8px solid #1c1c1c;
+  padding: 40px 50px;
+  color: #e6e6e6;
+  text-align: left;
+  width: 360px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
 }
 
-canvas {
-    background: #020202;
-    box-shadow:
-        inset 0 0 20px #000,
-        0 0 40px rgba(0,255,120,0.25);
+h1 {
+  margin: 0;
+  font-size: 40px;
+  letter-spacing: 4px;
+}
+
+h2 {
+  margin: 12px 0 0;
+  font-size: 22px;
+  letter-spacing: 3px;
+  opacity: 0.85;
+}
+
+p {
+  margin-top: 18px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+
+button {
+  margin-top: 26px;
+  padding: 12px 18px;
+  background: #1e1e1e;
+  color: #e6e6e6;
+  border: 2px solid #333;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+button:active {
+  background: #333;
 }
 </style>
 </head>
 
 <body>
 
-<div class="station">
-  <canvas id="screen" width="420" height="200"></canvas>
+<div class="screen">
+  <h1>DAIYNBALL</h1>
+  <h2>JBRLA</h2>
+  <p>RACE GAME — WORK IN PROGRESS</p>
+
+  <button id="startBtn">▶ START</button>
 </div>
 
+<audio id="music" src="soundtrack.mp3" loop></audio>
+
 <script>
-const canvas = document.getElementById("screen");
-const ctx = canvas.getContext("2d");
+const music = document.getElementById("music");
+const startBtn = document.getElementById("startBtn");
 
-// --- DOT FONT (5x7) ---
-const FONT = {
-  "A":[
-    "01110",
-    "10001",
-    "10001",
-    "11111",
-    "10001",
-    "10001",
-    "10001"],
-  "B":[
-    "11110",
-    "10001",
-    "11110",
-    "10001",
-    "10001",
-    "10001",
-    "11110"],
-  "D":[
-    "11110",
-    "10001",
-    "10001",
-    "10001",
-    "10001",
-    "10001",
-    "11110"],
-  "I":[
-    "11111",
-    "00100",
-    "00100",
-    "00100",
-    "00100",
-    "00100",
-    "11111"],
-  "J":[
-    "00111",
-    "00010",
-    "00010",
-    "00010",
-    "10010",
-    "10010",
-    "01100"],
-  "L":[
-    "10000",
-    "10000",
-    "10000",
-    "10000",
-    "10000",
-    "10000",
-    "11111"],
-  "N":[
-    "10001",
-    "11001",
-    "10101",
-    "10011",
-    "10001",
-    "10001",
-    "10001"],
-  "R":[
-    "11110",
-    "10001",
-    "10001",
-    "11110",
-    "10100",
-    "10010",
-    "10001"],
-  "Y":[
-    "10001",
-    "01010",
-    "00100",
-    "00100",
-    "00100",
-    "00100",
-    "00100"],
-  "W":[
-    "10001",
-    "10001",
-    "10001",
-    "10101",
-    "10101",
-    "11011",
-    "10001"],
-  "K":[
-    "10001",
-    "10010",
-    "10100",
-    "11000",
-    "10100",
-    "10010",
-    "10001"],
-  "O":[
-    "01110",
-    "10001",
-    "10001",
-    "10001",
-    "10001",
-    "10001",
-    "01110"],
-  "P":[
-    "11110",
-    "10001",
-    "10001",
-    "11110",
-    "10000",
-    "10000",
-    "10000"],
-  "G":[
-    "01110",
-    "10001",
-    "10000",
-    "10111",
-    "10001",
-    "10001",
-    "01110"],
-  "S":[
-    "01111",
-    "10000",
-    "10000",
-    "01110",
-    "00001",
-    "00001",
-    "11110"],
-  "—":[
-    "00000",
-    "00000",
-    "11111",
-    "00000",
-    "00000",
-    "00000",
-    "00000"],
-  " ":[
-    "00000",
-    "00000",
-    "00000",
-    "00000",
-    "00000",
-    "00000",
-    "00000"]
-};
-
-const DOT = 6;
-const GAP = 3;
-
-function drawText(text, x, y) {
-  text = text.toUpperCase();
-  for (let char of text) {
-    const glyph = FONT[char] || FONT[" "];
-    glyph.forEach((row, r) => {
-      [...row].forEach((bit, c) => {
-        if (bit === "1") {
-          ctx.fillStyle = "#00ff88";
-          ctx.shadowColor = "#00ff88";
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(
-            x + c * (DOT + GAP),
-            y + r * (DOT + GAP),
-            DOT / 2,
-            0,
-            Math.PI * 2
-          );
-          ctx.fill();
-        }
-      });
-    });
-    x += 6 * (DOT + GAP);
-  }
-}
-
-// --- DRAW ---
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-drawText("DAIYNBALL", 20, 30);
-drawText("JBRLA", 20, 90);
-drawText("RACE GAME — WORK IN PROGRESS", 20, 150);
+startBtn.addEventListener("click", () => {
+  music.play();
+  startBtn.textContent = "♪ PLAYING";
+  startBtn.disabled = true;
+});
 </script>
 
 </body>
