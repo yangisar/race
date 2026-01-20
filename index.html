@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DAIYNBALL — WIP</title>
 
 <style>
@@ -19,43 +19,15 @@ html, body {
 .station {
     background: #0b0b0b;
     border: 8px solid #222;
-    padding: 30px 40px;
+    padding: 30px;
     box-shadow: inset 0 0 40px #000;
 }
 
-.screen {
+canvas {
     background: #020202;
-    padding: 30px 40px;
-    box-shadow: inset 0 0 20px #000, 0 0 40px rgba(0,255,120,0.2);
-    text-align: center;
-}
-
-.dot {
-    width: 6px;
-    height: 6px;
-    margin: 2px;
-    border-radius: 50%;
-    background: #003319;
-    display: inline-block;
-}
-
-.on {
-    background: #00ff88;
-    box-shadow: 0 0 6px rgba(0,255,120,0.8);
-}
-
-.line {
-    margin-bottom: 14px;
-}
-
-button {
-    margin-top: 16px;
-    background: #00ff88;
-    border: none;
-    padding: 8px 16px;
-    font-family: monospace;
-    font-weight: bold;
-    cursor: pointer;
+    box-shadow:
+        inset 0 0 20px #000,
+        0 0 40px rgba(0,255,120,0.25);
 }
 </style>
 </head>
@@ -63,88 +35,188 @@ button {
 <body>
 
 <div class="station">
-  <div class="screen">
-    <div class="line" id="title"></div>
-    <div class="line" id="subtitle"></div>
-    <div class="line" id="status"></div>
-    <button onclick="startMusic()">▶ START</button>
-  </div>
+  <canvas id="screen" width="420" height="200"></canvas>
 </div>
 
 <script>
-// ---------- DOT TEXT ----------
-function dotText(el, text) {
-  el.innerHTML = "";
-  [...text].forEach(char => {
-    if (char === " ") {
-      el.innerHTML += "&nbsp;&nbsp;";
-      return;
-    }
-    for (let i = 0; i < 5; i++) {
-      let d = document.createElement("span");
-      d.className = "dot on";
-      el.appendChild(d);
-    }
-    el.innerHTML += "&nbsp;";
-  });
-}
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d");
 
-dotText(title, "DAIYNBALL");
-dotText(subtitle, "JBRLA");
-dotText(status, "RACE GAME — WORK IN PROGRESS");
+// --- DOT FONT (5x7) ---
+const FONT = {
+  "A":[
+    "01110",
+    "10001",
+    "10001",
+    "11111",
+    "10001",
+    "10001",
+    "10001"],
+  "B":[
+    "11110",
+    "10001",
+    "11110",
+    "10001",
+    "10001",
+    "10001",
+    "11110"],
+  "D":[
+    "11110",
+    "10001",
+    "10001",
+    "10001",
+    "10001",
+    "10001",
+    "11110"],
+  "I":[
+    "11111",
+    "00100",
+    "00100",
+    "00100",
+    "00100",
+    "00100",
+    "11111"],
+  "J":[
+    "00111",
+    "00010",
+    "00010",
+    "00010",
+    "10010",
+    "10010",
+    "01100"],
+  "L":[
+    "10000",
+    "10000",
+    "10000",
+    "10000",
+    "10000",
+    "10000",
+    "11111"],
+  "N":[
+    "10001",
+    "11001",
+    "10101",
+    "10011",
+    "10001",
+    "10001",
+    "10001"],
+  "R":[
+    "11110",
+    "10001",
+    "10001",
+    "11110",
+    "10100",
+    "10010",
+    "10001"],
+  "Y":[
+    "10001",
+    "01010",
+    "00100",
+    "00100",
+    "00100",
+    "00100",
+    "00100"],
+  "W":[
+    "10001",
+    "10001",
+    "10001",
+    "10101",
+    "10101",
+    "11011",
+    "10001"],
+  "K":[
+    "10001",
+    "10010",
+    "10100",
+    "11000",
+    "10100",
+    "10010",
+    "10001"],
+  "O":[
+    "01110",
+    "10001",
+    "10001",
+    "10001",
+    "10001",
+    "10001",
+    "01110"],
+  "P":[
+    "11110",
+    "10001",
+    "10001",
+    "11110",
+    "10000",
+    "10000",
+    "10000"],
+  "G":[
+    "01110",
+    "10001",
+    "10000",
+    "10111",
+    "10001",
+    "10001",
+    "01110"],
+  "S":[
+    "01111",
+    "10000",
+    "10000",
+    "01110",
+    "00001",
+    "00001",
+    "11110"],
+  "—":[
+    "00000",
+    "00000",
+    "11111",
+    "00000",
+    "00000",
+    "00000",
+    "00000"],
+  " ":[
+    "00000",
+    "00000",
+    "00000",
+    "00000",
+    "00000",
+    "00000",
+    "00000"]
+};
 
-// ---------- CHOPIN-INSPIRED SOUNDTRACK ----------
-let ctx, master;
+const DOT = 6;
+const GAP = 3;
 
-function startMusic() {
-  if (ctx) return;
-
-  ctx = new (window.AudioContext || window.webkitAudioContext)();
-  master = ctx.createGain();
-  master.gain.value = 0.15;
-  master.connect(ctx.destination);
-
-  // Minute Waltz–inspired motif (NOT a transcription)
-  // Fast 3/4, chromatic bounce, playful
-  const melody = [
-    76, 79, 81, 79, 76, 74,
-    76, 79, 83, 81, 79, 76,
-    74, 76, 79, 76, 74, 72
-  ];
-
-  let t = ctx.currentTime + 0.1;
-  const beat = 0.12; // very fast waltz feel
-
-  melody.forEach((note, i) => {
-    playNote(note, t + i * beat);
-  });
-
-  // Loop
-  setInterval(() => {
-    let start = ctx.currentTime + 0.05;
-    melody.forEach((note, i) => {
-      playNote(note, start + i * beat);
+function drawText(text, x, y) {
+  text = text.toUpperCase();
+  for (let char of text) {
+    const glyph = FONT[char] || FONT[" "];
+    glyph.forEach((row, r) => {
+      [...row].forEach((bit, c) => {
+        if (bit === "1") {
+          ctx.fillStyle = "#00ff88";
+          ctx.shadowColor = "#00ff88";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(
+            x + c * (DOT + GAP),
+            y + r * (DOT + GAP),
+            DOT / 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      });
     });
-  }, melody.length * beat * 1000);
+    x += 6 * (DOT + GAP);
+  }
 }
 
-function playNote(midi, time) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+// --- DRAW ---
+ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  osc.type = "triangle"; // chiptune-like
-  osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
-
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(0.4, time + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.11);
-
-  osc.connect(gain);
-  gain.connect(master);
-
-  osc.start(time);
-  osc.stop(time + 0.12);
-}
+drawText("DAIYNBALL", 20, 30);
+drawText("JBRLA", 20, 90);
+drawText("RACE GAME — WORK IN PROGRESS", 20, 150);
 </script>
 
 </body>
